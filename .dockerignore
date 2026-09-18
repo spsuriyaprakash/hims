@@ -1,0 +1,9 @@
+.venv
+venv
+__pycache__
+.git
+.env
+docs
+*.md
+docker/postgres/data
+.DS_Store

@@ -1,0 +1,128 @@
+{
+  "id": "hims",
+  "realm": "hims",
+  "displayName": "Hospital Information Management",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "verifyEmail": false,
+  "accessTokenLifespan": 900,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "roles": {
+    "realm": [
+      { "name": "super_admin", "description": "All configuration, all facilities" },
+      { "name": "hospital_admin", "description": "Facility master data and staff" },
+      { "name": "doctor", "description": "Clinical encounters and prescriptions" },
+      { "name": "nurse", "description": "Vitals and nursing notes" },
+      { "name": "receptionist", "description": "Registration and appointments" },
+      { "name": "lab_technician", "description": "Lab orders and results" },
+      { "name": "pharmacist", "description": "Pharmacy dispensing" },
+      { "name": "billing_clerk", "description": "Invoices and payments" },
+      { "name": "auditor", "description": "Read-only audit and reports" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "hims-api",
+      "name": "HIMS API",
+      "description": "Django REST audience. Not used for browser login.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "hims-api-local-secret",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "fullScopeAllowed": true,
+      "frontchannelLogout": false
+    },
+    {
+      "clientId": "hims-web",
+      "name": "HIMS Web",
+      "description": "Browser / local API testing client",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "rootUrl": "http://localhost:3000",
+      "baseUrl": "/",
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://localhost:8000/*",
+        "http://127.0.0.1:3000/*",
+        "http://127.0.0.1:8000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:8000"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3000/*##http://localhost:8000/*"
+      },
+      "defaultClientScopes": ["web-origins", "acr", "profile", "roles", "email"],
+      "optionalClientScopes": ["address", "phone", "offline_access", "microprofile-jwt"],
+      "protocolMappers": [
+        {
+          "name": "audience-hims-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "hims-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "id": "8f1c2a10-6b3e-4c1a-9d44-111111111111",
+      "username": "anita.rao",
+      "email": "anita.rao@hospital.org",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Anita",
+      "lastName": "Rao",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Passw0rd!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["doctor"]
+    },
+    {
+      "id": "9a2b3c40-7d5e-4f1a-8e55-222222222222",
+      "username": "priya.nair",
+      "email": "priya.nair@hospital.org",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Priya",
+      "lastName": "Nair",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Passw0rd!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["receptionist"]
+    }
+  ]
+}
