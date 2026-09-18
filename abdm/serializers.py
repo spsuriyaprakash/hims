@@ -78,3 +78,64 @@ class HipApiLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = HipApiLog
         fields = "__all__"
+
+
+class UnifiedOtpRequestSerializer(serializers.Serializer):
+    """
+    Unified OTP Request - Accepts payload for all 3 methods
+    Frontend sends: loginHint, loginId, scope, otpSystem
+    """
+    loginHint = serializers.CharField(
+        max_length=32,
+        help_text="aadhaar | abha-number | mobile"
+    )
+    loginId = serializers.CharField(
+        max_length=64,
+        help_text="Aadhaar (12 digits) | ABHA (14 digits) | Mobile (10 digits)"
+    )
+    scope = serializers.ListField(
+        child=serializers.CharField(),
+        help_text='["abha-enrol"] or ["abha-user-init"]'
+    )
+    otpSystem = serializers.CharField(
+        max_length=32,
+        help_text="aadhaar | abdm"
+    )
+
+    def validate(self, data):
+        login_hint = data.get("loginHint", "").lower()
+        login_id = data.get("loginId", "").strip()
+        scope = data.get("scope", [])
+
+        # Validate Aadhaar
+        if login_hint == "aadhaar":
+            if len(login_id.replace(" ", "")) != 12:
+                raise serializers.ValidationError("Aadhaar must be 12 digits")
+            if not login_id.isdigit():
+                raise serializers.ValidationError("Aadhaar must contain only digits")
+            if "abha-enrol" not in scope:
+                raise serializers.ValidationError("Aadhaar must use scope 'abha-enrol'")
+
+        # Validate ABHA Number
+        elif login_hint == "abha-number":
+            clean_abha = login_id.replace("-", "").strip()
+            if len(clean_abha) != 14:
+                raise serializers.ValidationError("ABHA must be 14 digits (with or without hyphens)")
+            if not clean_abha.isdigit():
+                raise serializers.ValidationError("ABHA must contain only digits")
+            if "abha-user-init" not in scope:
+                raise serializers.ValidationError("ABHA must use scope 'abha-user-init'")
+
+        # Validate Mobile
+        elif login_hint == "mobile":
+            if len(login_id) != 10:
+                raise serializers.ValidationError("Mobile must be 10 digits")
+            if not login_id.isdigit():
+                raise serializers.ValidationError("Mobile must contain only digits")
+            if "abha-user-init" not in scope:
+                raise serializers.ValidationError("Mobile must use scope 'abha-user-init'")
+
+        else:
+            raise serializers.ValidationError("loginHint must be 'aadhaar', 'abha-number', or 'mobile'")
+
+        return data

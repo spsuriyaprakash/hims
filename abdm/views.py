@@ -40,10 +40,38 @@ class PublicCertView(APIView):
         return Response({"success": True, "certificate": cert}, status=status.HTTP_200_OK)
 
 
+class UnifiedOtpRequestView(APIView):
+    """
+    POST /api/v1/abdm/m1/send-otp/
+    Unified OTP Request for all 3 methods (Aadhaar, ABHA, Mobile)
+    Frontend sends flexible payload with loginHint, loginId, scope, otpSystem
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = UnifiedOtpRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        login_hint = serializer.validated_data["loginHint"].lower()
+        login_id = serializer.validated_data["loginId"]
+        scope = serializer.validated_data["scope"]
+        otp_system = serializer.validated_data["otpSystem"].lower()
+
+        result = AbdmService.request_otp(
+            login_hint=login_hint,
+            login_id=login_id,
+            scope=scope,
+            otp_system=otp_system
+        )
+        return Response(result, status=status.HTTP_200_OK if result.get("success") else status.HTTP_400_BAD_REQUEST)
+
+
 class AadhaarOtpRequestView(APIView):
     """
     POST /api/v1/abdm/m1/enrol/aadhaar/send-otp/
     M1 API: Request OTP for ABHA Creation via Aadhaar
+    Legacy endpoint - delegates to UnifiedOtpRequestView
     """
     permission_classes = [AllowAny]
 
@@ -111,7 +139,7 @@ class CreateAbhaAddressView(APIView):
 
 class VerifyAbhaSendOtpView(APIView):
     """
-    POST /api/v1/abdm/m1/verify/send-otp/
+    POST /api/v1/abdm/m1/verify/abha-number/send-otp/
     M1 API: Request OTP to verify an existing ABHA Number
     """
     permission_classes = [AllowAny]
@@ -124,6 +152,24 @@ class VerifyAbhaSendOtpView(APIView):
         abha_number = serializer.validated_data["abha_number"]
         result = AbdmService.request_abha_verify_otp(abha_number)
         return Response(result, status=status.HTTP_200_OK if result.get("success") else status.HTTP_400_BAD_REQUEST)
+
+
+class VerifyMobileSendOtpView(APIView):
+    """
+    POST /api/v1/abdm/m1/verify/mobile/send-otp/
+    M1 API: Request OTP to verify via Mobile Number
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = MobileOtpRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        mobile_number = serializer.validated_data["mobile_number"]
+        result = AbdmService.request_mobile_verify_otp(mobile_number)
+        return Response(result, status=status.HTTP_200_OK if result.get("success") else status.HTTP_400_BAD_REQUEST)
+
 
 
 class VerifyAbhaConfirmOtpView(APIView):

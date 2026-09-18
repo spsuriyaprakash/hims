@@ -129,18 +129,35 @@ class AbdmService:
         return "MOCK_PUBLIC_RSA_CERTIFICATE_KEY"
 
     @classmethod
-    def request_aadhaar_otp(cls, aadhaar_number):
+    def request_otp(cls, login_hint, login_id, scope, otp_system):
         """
-        POST /abha/api/v3/enrollment/request/otp
+        Unified OTP Request Handler for all 3 methods
+        login_hint: "aadhaar" | "abha-number" | "mobile"
+        scope: ["abha-enrol"] | ["abha-user-init"]
         """
         token = cls.get_gateway_token()
-        url = f"{cls.BASE_URL}{ABDM_ENROL_REQUEST_OTP_URL}"
+
+        # Determine which endpoint to use based on login_hint and scope
+        if login_hint == "aadhaar" and "abha-enrol" in scope:
+            url = f"{cls.BASE_URL}{ABDM_ENROL_REQUEST_OTP_URL}"
+            flow = "ENROL"
+        else:
+            url = f"{cls.BASE_URL}{ABDM_LOGIN_REQUEST_OTP_URL}"
+            flow = "LOGIN"
+
+        # Clean login_id if it's ABHA number (remove hyphens)
+        if login_hint == "abha-number":
+            clean_login_id = login_id.replace("-", "").strip()
+        else:
+            clean_login_id = login_id
+
         payload = {
-            "scope": ["abha-enrol"],
-            "loginHint": "aadhaar",
-            "loginId": aadhaar_number,
-            "otpSystem": "aadhaar",
+            "scope": scope,
+            "loginHint": login_hint,
+            "loginId": clean_login_id,
+            "otpSystem": otp_system,
         }
+
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {token}",
@@ -150,15 +167,15 @@ class AbdmService:
         }
 
         status_code, res_data = cls._http_request(url, method="POST", data=payload, headers=headers)
-        cls.log_api_call(url, "POST", {"loginHint": "aadhaar"}, res_data, status_code)
+        cls.log_api_call(url, "POST", {"loginHint": login_hint}, res_data, status_code)
 
         if status_code == 200 and "txnId" in res_data:
             txn_id = res_data["txnId"]
             AbhaTransaction.objects.create(
                 txn_id=txn_id,
-                flow="ENROL",
-                login_hint="aadhaar",
-                scope_json=["abha-enrol"],
+                flow=flow,
+                login_hint=login_hint,
+                scope_json=scope,
                 status="OTP_SENT",
                 expires_at=timezone.now() + timedelta(minutes=10),
             )
@@ -168,9 +185,9 @@ class AbdmService:
         mock_txn_id = str(uuid.uuid4())
         AbhaTransaction.objects.create(
             txn_id=mock_txn_id,
-            flow="ENROL",
-            login_hint="aadhaar",
-            scope_json=["abha-enrol"],
+            flow=flow,
+            login_hint=login_hint,
+            scope_json=scope,
             status="OTP_SENT",
             expires_at=timezone.now() + timedelta(minutes=10),
         )
@@ -178,8 +195,21 @@ class AbdmService:
             "success": True,
             "txn_id": mock_txn_id,
             "message": "OTP sent successfully (Sandbox Mock)",
-            "data": {"txnId": mock_txn_id, "mobile": "******9821"},
+            "data": {"txnId": mock_txn_id, "mobile": f"******{str(login_id)[-4:]}"},
         }
+
+    @classmethod
+    def request_aadhaar_otp(cls, aadhaar_number):
+        """
+        POST /abha/api/v3/enrollment/request/otp
+        Legacy wrapper - delegates to request_otp()
+        """
+        return cls.request_otp(
+            login_hint="aadhaar",
+            login_id=aadhaar_number,
+            scope=["abha-enrol"],
+            otp_system="aadhaar"
+        )
 
     @classmethod
     def verify_aadhaar_otp(cls, txn_id, otp, mrn=None):
@@ -288,53 +318,29 @@ class AbdmService:
         """
         POST /abha/api/v3/profile/login/request/otp
         Initiate verification/auth for an existing ABHA Number
+        Legacy wrapper - delegates to request_otp()
         """
-        token = cls.get_gateway_token()
-        url = f"{cls.BASE_URL}{ABDM_LOGIN_REQUEST_OTP_URL}"
-        clean_abha = abha_number.replace("-", "").strip()
-        payload = {
-            "scope": ["abha-user-init"],
-            "loginHint": "abha-number",
-            "loginId": clean_abha,
-            "otpSystem": "aadhaar",
-        }
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {token}",
-            "REQUEST-ID": str(uuid.uuid4()),
-            "TIMESTAMP": timezone.now().isoformat(),
-            "X-CM-ID": cls.X_CM_ID,
-        }
-
-        status_code, res_data = cls._http_request(url, method="POST", data=payload, headers=headers)
-        cls.log_api_call(url, "POST", {"loginId": clean_abha}, res_data, status_code)
-
-        if status_code == 200 and "txnId" in res_data:
-            txn_id = res_data["txnId"]
-            AbhaTransaction.objects.create(
-                txn_id=txn_id,
-                flow="VERIFY",
-                login_hint="abha-number",
-                status="OTP_SENT",
-                expires_at=timezone.now() + timedelta(minutes=10),
-            )
-            return {"success": True, "txn_id": txn_id, "message": "OTP sent for existing ABHA verification", "data": res_data}
-
-        # Mock fallback response for sandbox testing
-        mock_txn_id = str(uuid.uuid4())
-        AbhaTransaction.objects.create(
-            txn_id=mock_txn_id,
-            flow="VERIFY",
+        return cls.request_otp(
             login_hint="abha-number",
-            status="OTP_SENT",
-            expires_at=timezone.now() + timedelta(minutes=10),
+            login_id=abha_number,
+            scope=["abha-user-init"],
+            otp_system="aadhaar"
         )
-        return {
-            "success": True,
-            "txn_id": mock_txn_id,
-            "message": "OTP sent for existing ABHA verification (Sandbox Mock)",
-            "data": {"txnId": mock_txn_id, "mobile": "******9821"},
-        }
+
+    @classmethod
+    def request_mobile_verify_otp(cls, mobile_number):
+        """
+        POST /abha/api/v3/profile/login/request/otp
+        Initiate verification/auth via Mobile Number
+        Legacy wrapper - delegates to request_otp()
+        """
+        return cls.request_otp(
+            login_hint="mobile",
+            login_id=mobile_number,
+            scope=["abha-user-init"],
+            otp_system="abdm"
+        )
+
 
     @classmethod
     def confirm_abha_verify_otp(cls, txn_id, otp):
