@@ -179,7 +179,7 @@ class AbdmService:
                 status="OTP_SENT",
                 expires_at=timezone.now() + timedelta(minutes=10),
             )
-            return {"success": True, "txn_id": txn_id, "message": res_data.get("message", "OTP sent successfully"), "data": res_data}
+            return {"success": True, "txn_id": txn_id, "message": res_data.get("message", "OTP sent successfully"), "data": res_data, "scope": scope}
 
         # Mock fallback response for sandbox testing
         mock_txn_id = str(uuid.uuid4())
@@ -196,6 +196,7 @@ class AbdmService:
             "txn_id": mock_txn_id,
             "message": "OTP sent successfully (Sandbox Mock)",
             "data": {"txnId": mock_txn_id, "mobile": f"******{str(login_id)[-4:]}"},
+            "scope": scope,
         }
 
     @classmethod

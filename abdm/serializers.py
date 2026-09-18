@@ -139,3 +139,16 @@ class UnifiedOtpRequestSerializer(serializers.Serializer):
             raise serializers.ValidationError("loginHint must be 'aadhaar', 'abha-number', or 'mobile'")
 
         return data
+
+
+class UnifiedOtpVerifySerializer(serializers.Serializer):
+    """
+    Unified OTP Verify - Accepts payload for all 3 methods
+    """
+    txn_id = serializers.CharField(max_length=64)
+    otp = serializers.CharField(max_length=6, min_length=6)
+    scope = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        help_text='Optional. If passed, used to route verification. e.g. ["abha-enrol"] or ["abha-user-init"]'
+    )

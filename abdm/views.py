@@ -67,6 +67,52 @@ class UnifiedOtpRequestView(APIView):
         return Response(result, status=status.HTTP_200_OK if result.get("success") else status.HTTP_400_BAD_REQUEST)
 
 
+class UnifiedOtpVerifyView(APIView):
+    """
+    POST /api/v1/abdm/m1/verify-otp/
+    Unified OTP Verify for all 3 methods (Aadhaar, ABHA, Mobile)
+    Frontend passes back txn_id, otp, and the scope they received from send-otp
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = UnifiedOtpVerifySerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        txn_id = serializer.validated_data["txn_id"]
+        otp = serializer.validated_data["otp"]
+        scope = serializer.validated_data.get("scope", [])
+
+        # Fallback to DB if frontend didn't pass scope
+        if not scope:
+            txn = AbhaTransaction.objects.filter(txn_id=txn_id).first()
+            if txn and txn.scope_json:
+                scope = txn.scope_json
+            else:
+                return Response({"error": "Scope is required or transaction not found"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Route verification based on scope
+        if "abha-enrol" in scope:
+            result = AbdmService.verify_aadhaar_otp(txn_id, otp)
+        else:
+            result = AbdmService.confirm_abha_verify_otp(txn_id, otp)
+            if result.get("success"):
+                patient = result["patient"]
+                patient_data = AbdmPatientSerializer(patient).data
+                return Response(
+                    {
+                        "success": True,
+                        "message": "Existing ABHA Verified & Linked Successfully",
+                        "patient": patient_data,
+                        "profile": result.get("profile"),
+                    },
+                    status=status.HTTP_200_OK,
+                )
+
+        return Response(result, status=status.HTTP_200_OK if result.get("success") else status.HTTP_400_BAD_REQUEST)
+
+
 class AadhaarOtpRequestView(APIView):
     """
     POST /api/v1/abdm/m1/enrol/aadhaar/send-otp/

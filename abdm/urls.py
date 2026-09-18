@@ -7,8 +7,9 @@ urlpatterns = [
     # path("config/", AbdmConfigView.as_view(), name="config"),
     path("m1/public-cert/", PublicCertView.as_view(), name="m1-public-cert"),
 
-    # Unified OTP Request for all 3 methods
+    # Unified OTP Request & Verify for all 3 methods
     path("m1/send-otp/", UnifiedOtpRequestView.as_view(), name="m1-unified-send-otp"),
+    path("m1/verify-otp/", UnifiedOtpVerifyView.as_view(), name="m1-unified-verify-otp"),
 
     # 1. Verify / Enrol by Aadhaar Number
     path("m1/enrol/aadhaar/send-otp/", AadhaarOtpRequestView.as_view(), name="m1-aadhaar-send-otp"),
