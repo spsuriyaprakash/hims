@@ -3,16 +3,9 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from abdm.models import AbdmConfig, AbdmPatient, HipApiLog
-from abdm.serializers import (
-    AadhaarOtpRequestSerializer,
-    AadhaarOtpVerifySerializer,
-    AbdmConfigSerializer,
-    AbdmPatientSerializer,
-    CreateAbhaAddressSerializer,
-    HipApiLogSerializer,
-)
-from abdm.services import AbdmService
+from abdm.models import *
+from abdm.serializers import *
+from abdm.services import *
 
 
 class AbdmConfigView(APIView):
@@ -116,6 +109,54 @@ class CreateAbhaAddressView(APIView):
         return Response(result, status=status.HTTP_200_OK if result.get("success") else status.HTTP_400_BAD_REQUEST)
 
 
+class VerifyAbhaSendOtpView(APIView):
+    """
+    POST /api/v1/abdm/m1/verify/send-otp/
+    M1 API: Request OTP to verify an existing ABHA Number
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = VerifyAbhaNumberRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        abha_number = serializer.validated_data["abha_number"]
+        result = AbdmService.request_abha_verify_otp(abha_number)
+        return Response(result, status=status.HTTP_200_OK if result.get("success") else status.HTTP_400_BAD_REQUEST)
+
+
+class VerifyAbhaConfirmOtpView(APIView):
+    """
+    POST /api/v1/abdm/m1/verify/confirm-otp/
+    M1 API: Confirm OTP to verify & link existing ABHA Number
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = VerifyAbhaNumberOtpSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        txn_id = serializer.validated_data["txn_id"]
+        otp = serializer.validated_data["otp"]
+
+        result = AbdmService.confirm_abha_verify_otp(txn_id, otp)
+        if result.get("success"):
+            patient = result["patient"]
+            patient_data = AbdmPatientSerializer(patient).data
+            return Response(
+                {
+                    "success": True,
+                    "message": "Existing ABHA Verified & Linked Successfully",
+                    "patient": patient_data,
+                    "profile": result.get("profile"),
+                },
+                status=status.HTTP_200_OK,
+            )
+        return Response(result, status=status.HTTP_400_BAD_REQUEST)
+
+
 class PatientListView(APIView):
     """
     GET /api/v1/abdm/m1/patients/
@@ -140,3 +181,4 @@ class HipApiLogListView(APIView):
         logs = HipApiLog.objects.all().order_by("-created_at")[:50]
         serializer = HipApiLogSerializer(logs, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+

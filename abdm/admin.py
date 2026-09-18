@@ -1,13 +1,5 @@
 from django.contrib import admin
-from abdm.models import (
-    AbdmConfig,
-    GatewaySession,
-    AbdmPatient,
-    AbhaTransaction,
-    AbhaToken,
-    HipApiLog,
-)
-
+from abdm.models import *
 
 @admin.register(AbdmConfig)
 class AbdmConfigAdmin(admin.ModelAdmin):

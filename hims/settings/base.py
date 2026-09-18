@@ -4,16 +4,17 @@ import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-env = environ.Env(
-    DJANGO_DEBUG=(bool, False),
-    DJANGO_ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
+env = environ.Env(  
+    DJANGO_DEBUG=(bool, True),
+    DJANGO_ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1", "*"]),
 )
 
 environ.Env.read_env(BASE_DIR / ".env", overwrite=False)
 
-SECRET_KEY = env("DJANGO_SECRET_KEY")
+SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-hims-default-local-secret-key-change-in-prod")
 DEBUG = env("DJANGO_DEBUG")
 ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS")
+
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -25,6 +26,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "corsheaders",
     "identity.apps.IdentityConfig",
+    "abdm.apps.AbdmConfig",
 ]
 
 MIDDLEWARE = [
@@ -116,3 +118,11 @@ KEYCLOAK_JWKS_URL = env(
     default=f"{KEYCLOAK_ISSUER}/protocol/openid-connect/certs",
 )
 HIMS_API_APPLICATION_CODE = "hims-api"
+
+# ABDM Configurations
+ABDM_ENV = env("ABDM_ENV", default="sandbox")
+ABDM_GATEWAY_URL = env("ABDM_GATEWAY_URL", default="https://dev.abdm.gov.in")
+ABDM_X_CM_ID = env("ABDM_X_CM_ID", default="sbx")
+ABDM_CLIENT_ID = env("ABDM_CLIENT_ID", default="SBX_TEST_CLIENT")
+ABDM_CLIENT_SECRET = env("ABDM_CLIENT_SECRET", default="SBX_SECRET_MOCK")
+
