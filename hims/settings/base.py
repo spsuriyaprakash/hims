@@ -67,9 +67,13 @@ DATABASES = {
 AUTH_USER_MODEL = "identity.User"
 
 REDIS_URL = env("REDIS_URL", default="redis://127.0.0.1:6379/0")
-CACHE_OPTIONS = {"CLIENT_CLASS": "django_redis.client.DefaultClient"}
+CACHE_OPTIONS = {
+    "CLIENT_CLASS": "django_redis.client.DefaultClient",
+    "CONNECTION_POOL_KWARGS": {"protocol": 2},
+}
 if REDIS_URL.startswith("rediss://"):
-    CACHE_OPTIONS["CONNECTION_POOL_KWARGS"] = {"ssl_cert_reqs": None}
+    CACHE_OPTIONS["CONNECTION_POOL_KWARGS"]["ssl_cert_reqs"] = None
+
 
 CACHES = {
     "default": {
@@ -125,4 +129,6 @@ ABDM_GATEWAY_URL = env("ABDM_GATEWAY_URL", default="https://dev.abdm.gov.in")
 ABDM_X_CM_ID = env("ABDM_X_CM_ID", default="sbx")
 ABDM_CLIENT_ID = env("ABDM_CLIENT_ID", default="SBX_TEST_CLIENT")
 ABDM_CLIENT_SECRET = env("ABDM_CLIENT_SECRET", default="SBX_SECRET_MOCK")
+ABDM_CALLBACK_BASE_URL = env("ABDM_CALLBACK_BASE_URL", default="https://localhost:8000/api/v1/abdm/webhook")
+
 

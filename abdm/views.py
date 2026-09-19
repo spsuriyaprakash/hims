@@ -3,6 +3,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from abdm.abdm import AbdmGateway
 from abdm.models import *
 from abdm.serializers import *
 from abdm.services import *
@@ -15,12 +16,12 @@ class AbdmConfigView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        config = AbdmService.get_config()
+        config = AbdmGateway.get_config()
         serializer = AbdmConfigSerializer(config)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
-        config = AbdmService.get_config()
+        config = AbdmGateway.get_config()
         serializer = AbdmConfigSerializer(config, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -36,7 +37,7 @@ class PublicCertView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        cert = AbdmService.get_public_cert()
+        cert = AbdmGateway.get_public_cert()
         return Response({"success": True, "certificate": cert}, status=status.HTTP_200_OK)
 
 

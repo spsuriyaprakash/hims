@@ -16,3 +16,7 @@ ABDM_ENROL_ABHA_ADDRESS_URL = "/abha/api/v3/enrollment/enrol/abha-address"
 # Verification & Auth (Existing ABHA)
 ABDM_LOGIN_REQUEST_OTP_URL = "/abha/api/v3/profile/login/request/otp"
 ABDM_LOGIN_VERIFY_OTP_URL = "/abha/api/v3/profile/login/verify/otp"
+
+# Webhook Callback Default
+ABDM_DEFAULT_CALLBACK_BASE_URL = "https://localhost:8000/api/v1/abdm/webhook"
+

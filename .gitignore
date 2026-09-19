@@ -81,4 +81,6 @@ celerybeat.pid
 .cache/
 tmp/
 temp/
-Milestone 2/
+Milestone/
+abdm/migrations/
+identity/migrations/

@@ -12,4 +12,6 @@ ABDM_GATEWAY_URL = env("ABDM_GATEWAY_URL", default="https://gateway.abdm.gov.in"
 ABDM_X_CM_ID = env("ABDM_X_CM_ID", default="abdm")
 ABDM_CLIENT_ID = env("ABDM_CLIENT_ID", default="")
 ABDM_CLIENT_SECRET = env("ABDM_CLIENT_SECRET", default="")
+ABDM_CALLBACK_BASE_URL = env("ABDM_CALLBACK_BASE_URL", default="")
+
 

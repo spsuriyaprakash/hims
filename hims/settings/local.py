@@ -8,4 +8,6 @@ ABDM_GATEWAY_URL = env("ABDM_GATEWAY_URL", default="https://dev.abdm.gov.in")
 ABDM_X_CM_ID = env("ABDM_X_CM_ID", default="sbx")
 ABDM_CLIENT_ID = env("ABDM_CLIENT_ID", default="SBX_TEST_CLIENT")
 ABDM_CLIENT_SECRET = env("ABDM_CLIENT_SECRET", default="SBX_SECRET_MOCK")
+ABDM_CALLBACK_BASE_URL = env("ABDM_CALLBACK_BASE_URL", default="https://localhost:8000/api/v1/abdm/webhook")
+
 
